@@ -1,0 +1,4 @@
+INDEX VERSION 1.134+E:\TrustBalance\.metadata\.plugins\org.eclipse.jdt.core
+168203763.index
+3949629032.index
+1865797976.index

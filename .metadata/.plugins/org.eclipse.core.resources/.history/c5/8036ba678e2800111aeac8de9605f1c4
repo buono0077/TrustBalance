@@ -1,0 +1,110 @@
+package Progetto;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
+
+// ================= CONTO BANCARIO =================
+class Conto {
+    private double saldo;
+    private final Lock lock = new ReentrantLock();
+
+    public Conto(double saldoIniziale) {
+        this.saldo = saldoIniziale;
+    }
+
+    public boolean preleva(double importo) {
+        lock.lock();
+        try {
+            if (saldo >= importo) {
+                saldo -= importo;
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void deposita(double importo) {
+        lock.lock();
+        try {
+            saldo += importo;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public double getSaldo() {
+        return saldo;
+    }
+}
+
+// ================= ASTA BOT =================
+class AstaBOT {
+    private double prezzoCorrente;
+    private final Lock lock = new ReentrantLock();
+    private final List<Double> offerte = new ArrayList<>();
+
+    public AstaBOT(double prezzoIniziale) {
+        this.prezzoCorrente = prezzoIniziale;
+    }
+
+    public boolean faiOfferta(double offerta) {
+        lock.lock(); // SEZIONE CRITICA
+        try {
+            if (offerta > prezzoCorrente) {
+                offerte.add(offerta);
+                prezzoCorrente = offerta;
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public double getPrezzoCorrente() {
+        return prezzoCorrente;
+    }
+}
+
+// ================= INVESTITORE (THREAD) =================
+class Investitore implements Runnable {
+    private final int id;
+    private final Conto conto;
+    private final List<AstaBOT> aste;
+    private final Random random = new Random();
+
+    public Investitore(int id, Conto conto, List<AstaBOT> aste) {
+        this.id = id;
+        this.conto = conto;
+        this.aste = aste;
+    }
+
+    @Override
+    public void run() {
+        for (int i = 0; i < aste.size(); i++) {
+            AstaBOT asta = aste.get(i);
+
+            double offerta = 95 + random.nextDouble() * 5; // prezzo BOT realistico
+
+            boolean successo = asta.faiOfferta(offerta);
+
+            if (successo) {
+                boolean pagato = conto.preleva(offerta);
+
+                if (pagato) {
+                    log("Asta " + i + " -> OFFERTA VINCENTE: " + offerta + "€");
+                } else {
+                    log("Asta " + i + " -> Fondi insufficienti");
+                }
+            } else {
+                log("Asta " + i + " -> Offerta troppo bassa");
+            }
+        }
+    }
+
+    private void log(String msg) {
+        System.out.println("[Investitore " + id + "] " + msg);
+    }
+}

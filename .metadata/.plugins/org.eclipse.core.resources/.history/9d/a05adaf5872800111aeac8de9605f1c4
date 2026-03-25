@@ -1,0 +1,45 @@
+// MAIN
+
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+public class TrustBalancePro {
+    public static void main(String[] args) {
+
+        Registro registro = new Registro();
+        AstaBOT asta = new AstaBOT(99.00, registro);
+
+        // THREAD POOL (scalabile)
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        Random random = new Random();
+
+        int numeroInvestitori = 50; // 🔥 test di carico
+
+        for (int i = 1; i <= numeroInvestitori; i++) {
+            double offerta = 99.0 + random.nextDouble(); // random tra 99 e 100
+            executor.execute(new InvestitoreTask("Investitore " + i, offerta, asta));
+        }
+
+        executor.shutdown();
+
+        try {
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // RISULTATI FINALI
+        System.out.println("\n🏁 ASTA TERMINATA");
+        System.out.println("💰 Prezzo finale: " + asta.getPrezzoCorrente() + " €");
+
+        Offerta vincitore = asta.getVincitore();
+        if (vincitore != null) {
+            System.out.println("🏆 Vincitore: " + vincitore);
+        }
+
+        registro.stampaLog();
+    }
+}

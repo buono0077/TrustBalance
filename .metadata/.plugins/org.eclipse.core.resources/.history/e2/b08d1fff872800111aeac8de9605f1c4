@@ -1,0 +1,64 @@
+package Progetto;
+
+import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+
+// Classe Asta (risorsa condivisa)
+class AstaBOT {
+    private double prezzoCorrente;
+    private List<Double> offerte;
+    private ReentrantLock lock;
+
+    public AstaBOT(double prezzoIniziale) {
+        this.prezzoCorrente = prezzoIniziale;
+        this.offerte = new ArrayList<>();
+        this.lock = new ReentrantLock();
+    }
+
+    public void faiOfferta(String nome, double offerta) {
+        lock.lock(); // 🔒 SEZIONE CRITICA
+        try {
+            System.out.println(nome + " entra in sezione critica");
+
+            if (offerta > prezzoCorrente) {
+                offerte.add(offerta);
+                prezzoCorrente = offerta;
+                System.out.println("✔ " + nome + " offre " + offerta + " € (NUOVO MIGLIORE)");
+            } else {
+                System.out.println("✘ " + nome + " offre " + offerta + " € (SCARTATA)");
+            }
+
+        } finally {
+            System.out.println(nome + " esce dalla sezione critica\n");
+            lock.unlock(); // 🔓
+        }
+    }
+
+    public double getPrezzoCorrente() {
+        return prezzoCorrente;
+    }
+}
+
+// Thread Investitore
+class InvestitoreThread extends Thread {
+    private String nome;
+    private double offerta;
+    private AstaBOT asta;
+
+    public InvestitoreThread(String nome, double offerta, AstaBOT asta) {
+        this.nome = nome;
+        this.offerta = offerta;
+        this.asta = asta;
+    }
+
+    @Override
+    public void run() {
+        try {
+            Thread.sleep(new Random().nextInt(100)); // simula arrivo casuale
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        asta.faiOfferta(nome, offerta);
+    }
+}

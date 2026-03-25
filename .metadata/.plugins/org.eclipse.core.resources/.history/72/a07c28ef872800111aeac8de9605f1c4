@@ -1,0 +1,35 @@
+package Progetto;
+import java.util.ArrayList;
+import java.util.List;
+
+public class TrustBalanceSimulation {
+    public static void main(String[] args) {
+
+        AstaBOT asta = new AstaBOT(99.00);
+
+        // Creazione thread (investitori)
+        List<Thread> investitori = new ArrayList<>();
+
+        investitori.add(new InvestitoreThread("Investitore A", 99.70, asta));
+        investitori.add(new InvestitoreThread("Investitore B", 99.60, asta));
+        investitori.add(new InvestitoreThread("Investitore C", 99.85, asta));
+        investitori.add(new InvestitoreThread("Investitore D", 99.90, asta));
+
+        // Avvio thread
+        for (Thread t : investitori) {
+            t.start();
+        }
+
+        // Attesa fine thread
+        for (Thread t : investitori) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("🏁 ASTA TERMINATA");
+        System.out.println("💰 Prezzo finale: " + asta.getPrezzoCorrente() + " €");
+    }
+}

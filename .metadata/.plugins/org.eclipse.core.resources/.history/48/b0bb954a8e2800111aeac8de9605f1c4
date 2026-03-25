@@ -1,0 +1,55 @@
+package Progetto;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+public class TrustBalanceSimulation {
+
+    public static void main(String[] args) throws InterruptedException {
+
+        int NUM_INVESTITORI = 50;
+        int NUM_ASTE = 50;
+
+        List<Conto> conti = new ArrayList<>();
+        List<AstaBOT> aste = new ArrayList<>();
+
+        Random random = new Random();
+
+        // ===== CREAZIONE CONTI (5000 - 50000€) =====
+        for (int i = 0; i < NUM_INVESTITORI; i++) {
+            double saldo = 5000 + random.nextDouble() * 45000;
+            conti.add(new Conto(saldo));
+        }
+
+        // ===== CREAZIONE ASTE =====
+        for (int i = 0; i < NUM_ASTE; i++) {
+            aste.add(new AstaBOT(95.0));
+        }
+
+        // ===== THREAD POOL =====
+        ExecutorService executor = Executors.newFixedThreadPool(50);
+
+        // ===== AVVIO THREAD =====
+        for (int i = 0; i < NUM_INVESTITORI; i++) {
+            executor.execute(new Investitore(i, conti.get(i), aste));
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+
+        // ===== RISULTATI FINALI =====
+        System.out.println("\n=== SALDI FINALI ===");
+        for (int i = 0; i < conti.size(); i++) {
+            System.out.println("Investitore " + i + ": " + conti.get(i).getSaldo() + "€");
+        }
+
+        System.out.println("\n=== PREZZI FINALI ASTE ===");
+        for (int i = 0; i < aste.size(); i++) {
+            System.out.println("Asta " + i + ": " + aste.get(i).getPrezzoCorrente() + "€");
+        }
+    }
+}

@@ -1,0 +1,109 @@
+package Progetto;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
+
+// ================= CONTO =================
+class Conto {
+    private double saldo;
+    private final Lock lock = new ReentrantLock();
+
+    public Conto(double saldo) {
+        this.saldo = saldo;
+    }
+
+    public boolean preleva(double importo) {
+        lock.lock();
+        try {
+            if (saldo >= importo) {
+                saldo -= importo;
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public double getSaldo() {
+        return saldo;
+    }
+}
+
+// ================= ASTA BOT =================
+class AstaBOT {
+    private double prezzoCorrente;
+    private final Lock lock = new ReentrantLock();
+
+    public AstaBOT(double prezzoIniziale) {
+        this.prezzoCorrente = prezzoIniziale;
+    }
+
+    public boolean faiOfferta(double prezzo) {
+        lock.lock(); // SEZIONE CRITICA
+        try {
+            if (prezzo > prezzoCorrente) {
+                prezzoCorrente = prezzo;
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public double getPrezzoCorrente() {
+        return prezzoCorrente;
+    }
+}
+
+// ================= INVESTITORE =================
+class Investitore implements Runnable {
+
+    private final int id;
+    private final Conto conto;
+    private final List<AstaBOT> aste;
+    private final Random random = new Random();
+
+    public Investitore(int id, Conto conto, List<AstaBOT> aste) {
+        this.id = id;
+        this.conto = conto;
+        this.aste = aste;
+    }
+
+    @Override
+    public void run() {
+
+        for (int i = 0; i < aste.size(); i++) {
+
+            AstaBOT asta = aste.get(i);
+
+            // prezzo BOT tra 80 e 100 con 2 decimali
+            double prezzo = 80 + (20 * random.nextDouble());
+            prezzo = Math.round(prezzo * 100.0) / 100.0;
+
+            // importo investimento tra 5000 e 50000
+            double importo = 5000 + (45000 * random.nextDouble());
+
+            boolean successo = asta.faiOfferta(prezzo);
+
+            if (successo) {
+                boolean pagato = conto.preleva(importo);
+
+                if (pagato) {
+                    log("Asta " + i + " → OFFERTA VINCENTE: " 
+                        + prezzo + " € | Investiti: " + (int)importo + "€");
+                } else {
+                    log("Asta " + i + " → Fondi insufficienti");
+                }
+            } else {
+                log("Asta " + i + " → Offerta troppo bassa (" + prezzo + " €)");
+            }
+        }
+    }
+
+    private void log(String msg) {
+        System.out.println("[Investitore " + id + "] " + msg);
+    }
+}

@@ -1,0 +1,69 @@
+package Progetto;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class TrustBalance {
+    public static void main(String[] args) throws InterruptedException {
+
+        final int NUM_UTENTI = 50;
+        final int NUM_ASTE = 5;
+
+        List<ContoBancario> conti = new ArrayList<>();
+        List<AstaBOT> aste = new ArrayList<>();
+        List<Thread> threads = new ArrayList<>();
+
+        Random random = new Random();
+
+        // SALDI INIZIALI
+        System.out.println("--- SALDI INIZIALI ---");
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            double saldo = 5000 + random.nextInt(45001);
+            conti.add(new ContoBancario(saldo));
+
+            System.out.println("Utente " + i + " saldo iniziale: " + saldo);
+        }
+
+        // CREAZIONE 5 ASTE
+        for (int i = 0; i < NUM_ASTE; i++) {
+            aste.add(new AstaBOT());
+        }
+
+        // 50 THREAD
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            Thread t = new Investitore(i, aste);
+            threads.add(t);
+            t.start();
+        }
+
+        for (Thread t : threads) {
+            t.join();
+        }
+
+        // RISULTATI ASTE + PRELIEVO SOLO VINCITORE
+        System.out.println("\n--- RISULTATI ASTE ---");
+        for (int i = 0; i < NUM_ASTE; i++) {
+            AstaBOT asta = aste.get(i);
+            int vincitore = asta.getVincitore();
+            double prezzo = asta.getPrezzoFinale();
+
+            if (vincitore != -1) {
+                conti.get(vincitore).preleva(prezzo);
+
+                System.out.println("Asta " + i +
+                        " vinta da utente " + vincitore +
+                        " con prezzo " + String.format("%.2f £", prezzo));
+            } else {
+                System.out.println("Asta " + i + " senza vincitore");
+            }
+        }
+
+        // SALDI FINALI
+        System.out.println("\n--- SALDI FINALI ---");
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            System.out.println("Utente " + i +
+                    " saldo finale: " + conti.get(i).getSaldo());
+        }
+    }
+}

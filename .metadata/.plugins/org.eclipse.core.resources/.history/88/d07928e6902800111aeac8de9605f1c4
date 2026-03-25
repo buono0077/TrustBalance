@@ -1,0 +1,69 @@
+package Progetto;
+
+import java.util.*;
+
+public class TrustBalanceSimulation {
+
+    public static void main(String[] args) throws InterruptedException {
+
+        final int NUM_UTENTI = 50;
+        final int NUM_ASTE = 5;
+
+        List<ContoBancario> conti = new ArrayList<>();
+        List<AstaBOT> aste = new ArrayList<>();
+        List<Thread> threads = new ArrayList<>();
+
+        Random random = new Random();
+
+        // Creazione conti (5000 - 50000)
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            double saldo = 5000 + random.nextInt(45001);
+            conti.add(new ContoBancario(saldo));
+        }
+
+        // Creazione aste
+        for (int i = 0; i < NUM_ASTE; i++) {
+            aste.add(new AstaBOT());
+        }
+
+        // Creazione thread investitori
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            Thread t = new Investitore(i, conti.get(i), aste);
+            threads.add(t);
+            t.start();
+        }
+
+        // Attesa fine thread
+        for (Thread t : threads) {
+            t.join();
+        }
+
+        // AGGIUDICAZIONE FINALE
+        System.out.println("\n--- RISULTATI ASTE ---");
+
+        for (int i = 0; i < NUM_ASTE; i++) {
+            AstaBOT asta = aste.get(i);
+            int vincitore = asta.getVincitore();
+
+            if (vincitore != -1) {
+                double prezzo = asta.getPrezzoFinale();
+
+                conti.get(vincitore).preleva(prezzo);
+
+                System.out.println("Asta " + i +
+                        " vinta da utente " + vincitore +
+                        " con prezzo " +
+                        String.format("%.2f £", prezzo));
+            }
+        }
+
+        // STATO FINALE CONTI
+        System.out.println("\n--- SALDI FINALI ---");
+
+        for (int i = 0; i < NUM_UTENTI; i++) {
+            System.out.println("Utente " + i +
+                    " saldo: " +
+                    conti.get(i).getSaldo());
+        }
+    }
+}

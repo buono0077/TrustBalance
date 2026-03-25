@@ -1,0 +1,107 @@
+package Progetto;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
+
+// MODEL: Offerta
+class Offerta {
+    String investitore;
+    double prezzo;
+
+    public Offerta(String investitore, double prezzo) {
+        this.investitore = investitore;
+        this.prezzo = prezzo;
+    }
+
+    @Override
+    public String toString() {
+        return investitore + " -> " + prezzo + " €";
+    }
+}
+
+// LOGGER (thread-safe)
+class Registro {
+    private List<String> log = Collections.synchronizedList(new ArrayList<>());
+
+    public void scrivi(String messaggio) {
+        log.add(messaggio);
+    }
+
+    public void stampaLog() {
+        System.out.println("\n LOG OPERAZIONI:");
+        for (String s : log) {
+            System.out.println(s);
+        }
+    }
+}
+
+// RISORSA CONDIVISA
+class AstaBOT {
+    private double prezzoCorrente;
+    private List<Offerta> offerte;
+    private ReentrantLock lock;
+    private Registro registro;
+
+    public AstaBOT(double prezzoIniziale, Registro registro) {
+        this.prezzoCorrente = prezzoIniziale;
+        this.offerte = new ArrayList<>();
+        this.lock = new ReentrantLock();
+        this.registro = registro;
+    }
+
+    public void faiOfferta(String nome, double prezzo) {
+        lock.lock(); // MUTEX
+        try {
+            registro.scrivi(nome + " entra in sezione critica");
+
+            if (prezzo > prezzoCorrente) {
+                Offerta offerta = new Offerta(nome, prezzo);
+                offerte.add(offerta);
+                prezzoCorrente = prezzo;
+
+                registro.scrivi("✔ " + nome + " offre " + prezzo + " € (NUOVO MIGLIORE)");
+            } else {
+                registro.scrivi("✘ " + nome + " offre " + prezzo + " € (SCARTATA)");
+            }
+
+        } finally {
+            registro.scrivi(nome + " esce dalla sezione critica");
+            lock.unlock(); // RILASCIO LOCK
+        }
+    }
+
+    public Offerta getVincitore() {
+        return offerte.stream()
+                .max(Comparator.comparingDouble(o -> o.prezzo))
+                .orElse(null);
+    }
+
+    public double getPrezzoCorrente() {
+        return prezzoCorrente;
+    }
+}
+
+// TASK
+class InvestitoreTask implements Runnable {
+    private String nome;
+    private double offerta;
+    private AstaBOT asta;
+
+    public InvestitoreTask(String nome, double offerta, AstaBOT asta) {
+        this.nome = nome;
+        this.offerta = offerta;
+        this.asta = asta;
+    }
+
+    @Override
+    public void run() {
+        try {
+            Thread.sleep(new Random().nextInt(200)); // simulazione realistica
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        asta.faiOfferta(nome, offerta);
+    }
+}
